@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live Gradient Generator</title>
+
+<style>
+html, body {
+  margin:0;
+  padding:0;
+  background:#0b0b0d;
+  color:#fff;
+  font-family:system-ui, sans-serif;
+  height:100%;
+}
+#layout {
+  display:flex;
+  height:100%;
+}
+#controls {
+  width:320px;
+  padding:16px;
+  background:#15151a;
+  box-sizing:border-box;
+}
+#controls h1 {
+  font-size:18px;
+  margin:0 0 12px;
+}
+label {
+  display:block;
+  margin:12px 0 4px;
+  font-size:13px;
+  opacity:.8;
+}
+input, select, button, textarea {
+  width:100%;
+  margin-bottom:8px;
+}
+canvas {
+  flex:1;
+  display:block;
+}
+textarea {
+  height:110px;
+  background:#0f0f14;
+  color:#b8b8ff;
+  font-family:monospace;
+  resize:none;
+}
+button {
+  padding:8px;
+  background:#3a3aff;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+button:hover { background:#5050ff; }
+</style>
+</head>
+
+<body>
+
+<div id="layout">
+
+  <div id="controls">
+    <h1>Gradient Generator</h1>
+
+    <label>Type</label>
+    <select id="type">
+      <option value="linear">Linear</option>
+      <option value="radial">Radial</option>
+    </select>
+
+    <label>Angle (linear)</label>
+    <input type="range" id="angle" min="0" max="360" value="45">
+
+    <label>Color A</label>
+    <input type="color" id="c1" value="#ff4d4d">
+
+    <label>Color B</label>
+    <input type="color" id="c2" value="#4d7bff">
+
+    <label>Color C</label>
+    <input type="color" id="c3" value="#4dff9d">
+
+    <button id="export">Export PNG</button>
+
+    <label>CSS</label>
+    <textarea id="css" readonly></textarea>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+</div>
+
+<script>
+// ============================
+// Canvas setup
+// ============================
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = window.innerWidth - 320;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ============================
+// Controls
+// ============================
+const type = document.getElementById("type");
+const angle = document.getElementById("angle");
+const c1 = document.getElementById("c1");
+const c2 = document.getElementById("c2");
+const c3 = document.getElementById("c3");
+const cssOut = document.getElementById("css");
+
+// ============================
+// Draw gradient
+// ============================
+function draw(){
+  let grad;
+
+  if(type.value === "linear"){
+    const a = angle.value * Math.PI/180;
+    const x = Math.cos(a) * canvas.width;
+    const y = Math.sin(a) * canvas.height;
+    grad = ctx.createLinearGradient(
+      canvas.width/2 - x/2,
+      canvas.height/2 - y/2,
+      canvas.width/2 + x/2,
+      canvas.height/2 + y/2
+    );
+  } else {
+    grad = ctx.createRadialGradient(
+      canvas.width/2, canvas.height/2, 0,
+      canvas.width/2, canvas.height/2,
+      Math.max(canvas.width, canvas.height)/2
+    );
+  }
+
+  grad.addColorStop(0, c1.value);
+  grad.addColorStop(0.5, c2.value);
+  grad.addColorStop(1, c3.value);
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  updateCSS();
+}
+
+// ============================
+// CSS output
+// ============================
+function updateCSS(){
+  if(type.value === "linear"){
+    cssOut.value =
+`background: linear-gradient(${angle.value}deg,
+  ${c1.value},
+  ${c2.value},
+  ${c3.value}
+);`;
+  } else {
+    cssOut.value =
+`background: radial-gradient(
+  ${c1.value},
+  ${c2.value},
+  ${c3.value}
+);`;
+  }
+}
+
+// ============================
+// Export PNG
+// ============================
+document.getElementById("export").onclick = () => {
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = "gradient.png";
+  a.click();
+};
+
+// ============================
+// Hook controls
+// ============================
+[type, angle, c1, c2, c3].forEach(el => {
+  el.addEventListener("input", draw);
+});
+
+// Initial render
+draw();
+</script>
+
+</body>
+</html>
